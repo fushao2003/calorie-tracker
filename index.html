@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="热量追踪">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./css/app.css">
+  <title>热量追踪</title>
+</head>
+<body>
+  <div id="app">
+
+    <!-- Home Page -->
+    <div id="page-home" class="page active">
+      <div class="header">
+        <h1>热量追踪</h1>
+        <button class="header-btn" id="btn-settings">⚙</button>
+      </div>
+      <div class="page-content" id="home-content">
+        <div class="ring-container" id="ring-container"></div>
+        <div class="macros" id="macros"></div>
+        <div class="food-list-title">今日记录</div>
+        <div id="food-list"></div>
+      </div>
+      <button class="fab" id="btn-capture">+</button>
+    </div>
+
+    <!-- History Page -->
+    <div id="page-history" class="page">
+      <div class="header">
+        <button class="header-btn back-btn" id="btn-history-back">←</button>
+        <h1>历史记录</h1>
+        <div style="width:40px"></div>
+      </div>
+      <div class="page-content" id="history-content"></div>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="page-settings" class="page">
+      <div class="header">
+        <button class="header-btn back-btn" id="btn-settings-back">←</button>
+        <h1>设置</h1>
+        <div style="width:40px"></div>
+      </div>
+      <div class="page-content" id="settings-content"></div>
+    </div>
+
+    <!-- Result Page (AI analysis result) -->
+    <div id="page-result" class="page">
+      <div class="header">
+        <h1>识别结果</h1>
+        <button class="header-btn" id="btn-result-close">✕</button>
+      </div>
+      <div class="page-content">
+        <img id="result-image" class="result-image" src="" alt="Food photo">
+        <div class="result-form" id="result-form"></div>
+      </div>
+    </div>
+
+    <!-- Offline Banner -->
+    <div class="offline-banner hidden" id="offline-banner">当前处于离线状态，AI 识别功能不可用</div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loading-text">分析中...</div>
+    </div>
+
+  </div>
+
+  <script src="./js/db.js"></script>
+  <script src="./js/camera.js"></script>
+  <script src="./js/ai.js"></script>
+  <script src="./js/ui.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
