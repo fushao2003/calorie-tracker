@@ -1,18 +1,19 @@
-// App state
-let currentImageDataUrl = null;
+// ── State ──
 
-// Init
+let currentRecordMode = null; // 'food-db' | 'template' | 'manual'
+
+// ── Init ──
+
 async function init() {
   registerSW();
   try {
     await refreshHome();
   } catch (err) {
     console.error('Failed to load home:', err);
-    // Continue — renderHome will show empty state even if DB fails
     renderHome([]);
   }
 
-  // Navigation events
+  // Navigation
   document.getElementById('btn-settings').addEventListener('click', () => {
     showPage('settings');
     renderSettings();
@@ -24,15 +25,33 @@ async function init() {
     refreshHome();
   });
 
+  document.getElementById('btn-weekly-view').addEventListener('click', () => {
+    showPage('weekly');
+    renderWeekly(0);
+    bindWeeklyEvents();
+  });
+
+  document.getElementById('btn-weekly-back').addEventListener('click', () => {
+    showPage('history');
+    renderHistory();
+  });
+
+  document.getElementById('btn-record-back').addEventListener('click', () => {
+    showPage('home');
+    refreshHome();
+  });
+
+  document.getElementById('btn-foods-back').addEventListener('click', goBackFromManagement);
+  document.getElementById('btn-templates-back').addEventListener('click', goBackFromManagement);
   document.getElementById('btn-settings-back').addEventListener('click', () => {
     showPage('home');
     refreshHome();
   });
 
-  // FAB add button
-  document.getElementById('btn-capture').addEventListener('click', showAddChoice);
+  // FAB
+  document.getElementById('btn-capture').addEventListener('click', showRecordActionSheet);
 
-  // History link (long press or click on ring to see history)
+  // Home ring click -> history
   document.getElementById('ring-container').addEventListener('click', () => {
     showPage('history');
     renderHistory();
@@ -40,49 +59,37 @@ async function init() {
 
   // Global click delegation
   document.addEventListener('click', handleGlobalClick);
-
-  // Online/offline detection
-  function updateOnlineStatus() {
-    const banner = document.getElementById('offline-banner');
-    if (navigator.onLine) {
-      banner.classList.add('hidden');
-    } else {
-      banner.classList.remove('hidden');
-    }
-  }
-  window.addEventListener('online', updateOnlineStatus);
-  window.addEventListener('offline', updateOnlineStatus);
-  updateOnlineStatus();
-
-  // Check API key on init
-  const settings = getSettings();
-  if (!settings.apiKey) {
-    setTimeout(() => {
-      showPage('settings');
-      renderSettings();
-      bindSettingsEvents();
-      showToast('请先配置豆包 API Key');
-    }, 500);
-  }
 }
 
-// Add choice: camera or manual
-function showAddChoice() {
+function goBackFromManagement() {
+  showPage('settings');
+  renderSettings();
+  bindSettingsEvents();
+}
+
+// ── Action sheet for recording ──
+
+function showRecordActionSheet() {
   const sheet = document.createElement('div');
   sheet.className = 'action-sheet';
   sheet.innerHTML = `
     <div class="action-sheet-mask"></div>
     <div class="action-sheet-panel">
-      <button class="action-sheet-btn" id="choice-camera">拍照识别</button>
-      <button class="action-sheet-btn" id="choice-manual">手动输入</button>
+      <button class="action-sheet-btn" id="choice-food-db">从食物库记录</button>
+      <button class="action-sheet-btn" id="choice-template">从餐食模板记录</button>
+      <button class="action-sheet-btn" id="choice-manual">手动快速输入</button>
       <button class="action-sheet-cancel" id="choice-cancel">取消</button>
     </div>
   `;
   document.body.appendChild(sheet);
 
-  sheet.querySelector('#choice-camera').onclick = () => {
+  sheet.querySelector('#choice-food-db').onclick = () => {
     sheet.remove();
-    startCaptureFlow();
+    startFoodDBFlow();
+  };
+  sheet.querySelector('#choice-template').onclick = () => {
+    sheet.remove();
+    startTemplateFlow();
   };
   sheet.querySelector('#choice-manual').onclick = () => {
     sheet.remove();
@@ -92,50 +99,90 @@ function showAddChoice() {
   sheet.querySelector('.action-sheet-mask').onclick = () => sheet.remove();
 }
 
+// ── Record flow: Food DB ──
+
+async function startFoodDBFlow() {
+  const foods = await getAllFoods();
+  currentRecordMode = 'food-db';
+  showPage('record');
+  renderRecordFoodDB(foods);
+}
+
+// ── Record flow: Template ──
+
+async function startTemplateFlow() {
+  const templates = await getAllTemplates();
+  currentRecordMode = 'template';
+  showPage('record');
+  renderRecordTemplate(templates);
+}
+
+// ── Record flow: Manual ──
+
 function startManualFlow() {
-  currentImageDataUrl = null;
-  showPage('result');
-  renderResult(null, {
-    foodName: '',
+  currentRecordMode = 'manual';
+  showPage('record');
+  renderRecordManual();
+}
+
+// ── Confirm: Food DB ──
+
+async function confirmFoodDB() {
+  const foodId = document.getElementById('select-food').value;
+  const foods = await getAllFoods();
+  const food = foods.find((f) => f.id === foodId);
+  if (!food) { showToast('请选择食物'); return; }
+
+  const weight = parseFloat(document.getElementById('input-weight').value) || 0;
+  if (weight <= 0) { showToast('请输入有效重量'); return; }
+
+  const name = document.getElementById('edit-name').value.trim() || food.name;
+  const ratio = weight / 100;
+
+  const record = {
+    id: generateId(),
+    foodName: name,
+    estimatedWeight: weight,
+    calories: parseFloat((food.caloriesPer100g * ratio).toFixed(1)),
+    protein: parseFloat((food.proteinPer100g * ratio).toFixed(1)),
+    fat: parseFloat((food.fatPer100g * ratio).toFixed(1)),
+    carbs: parseFloat((food.carbsPer100g * ratio).toFixed(1)),
+    timestamp: new Date().toISOString()
+  };
+
+  await addRecord(record);
+  showToast(`已记录: ${name} ${record.calories} kcal`);
+  showPage('home');
+  refreshHome();
+}
+
+// ── Confirm: Template ──
+
+async function confirmTemplate(templateId) {
+  const templates = await getAllTemplates();
+  const tpl = templates.find((t) => t.id === templateId);
+  if (!tpl) { showToast('模板未找到'); return; }
+
+  const record = {
+    id: generateId(),
+    foodName: tpl.name,
     estimatedWeight: 0,
-    calories: 0,
-    protein: 0,
-    fat: 0,
-    carbs: 0
-  });
-  bindResultEvents();
+    calories: tpl.calories,
+    protein: tpl.protein,
+    fat: tpl.fat,
+    carbs: tpl.carbs,
+    timestamp: new Date().toISOString()
+  };
+
+  await addRecord(record);
+  showToast(`已记录: ${tpl.name} ${tpl.calories} kcal`);
+  showPage('home');
+  refreshHome();
 }
 
-// Capture flow
-async function startCaptureFlow() {
-  try {
-    currentImageDataUrl = await captureFood();
-    const settings = getSettings();
+// ── Confirm: Manual ──
 
-    if (!settings.apiKey) {
-      showToast('请先在设置中配置豆包 API Key');
-      return;
-    }
-
-    showPage('result');
-    showLoading('AI 正在识别食物...');
-
-    const result = await analyzeFood(currentImageDataUrl, settings.apiKey, settings.modelName);
-    hideLoading();
-    renderResult(currentImageDataUrl, result);
-    bindResultEvents();
-  } catch (err) {
-    hideLoading();
-    if (err.message === 'Camera cancelled') return;
-    console.error(err);
-    showToast('识别失败: ' + (err.message || '未知错误'));
-    showPage('home');
-    refreshHome();
-  }
-}
-
-// Confirm save
-async function confirmSave() {
+async function confirmManual() {
   const foodName = document.getElementById('edit-name').value.trim();
   const estimatedWeight = parseFloat(document.getElementById('edit-weight').value) || 0;
   const calories = parseFloat(document.getElementById('edit-calories').value) || 0;
@@ -143,18 +190,11 @@ async function confirmSave() {
   const fat = parseFloat(document.getElementById('edit-fat').value) || 0;
   const carbs = parseFloat(document.getElementById('edit-carbs').value) || 0;
 
-  if (!foodName) {
-    showToast('请输入食物名称');
-    return;
-  }
-
-  if (calories <= 0) {
-    showToast('请输入有效热量');
-    return;
-  }
+  if (!foodName) { showToast('请输入食物名称'); return; }
+  if (calories <= 0) { showToast('请输入有效热量'); return; }
 
   const record = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: generateId(),
     foodName,
     estimatedWeight,
     calories,
@@ -170,7 +210,33 @@ async function confirmSave() {
   refreshHome();
 }
 
-// Event handlers
+// ── Save as template (from manual) ──
+
+async function saveAsTemplate() {
+  const foodName = document.getElementById('edit-name').value.trim();
+  const calories = parseFloat(document.getElementById('edit-calories').value) || 0;
+  const protein = parseFloat(document.getElementById('edit-protein').value) || 0;
+  const fat = parseFloat(document.getElementById('edit-fat').value) || 0;
+  const carbs = parseFloat(document.getElementById('edit-carbs').value) || 0;
+
+  if (!foodName) { showToast('请输入食物名称'); return; }
+  if (calories <= 0) { showToast('请输入有效热量'); return; }
+
+  const template = {
+    id: generateId(),
+    name: foodName,
+    calories,
+    protein,
+    fat,
+    carbs
+  };
+
+  await addTemplate(template);
+  showToast(`已保存模板: ${foodName}`);
+}
+
+// ── Global click delegation ──
+
 function handleGlobalClick(e) {
   // Delete food entry
   const deleteBtn = e.target.closest('[data-delete]');
@@ -183,34 +249,186 @@ function handleGlobalClick(e) {
     return;
   }
 
-  // Retake / switch to camera
-  if (e.target.id === 'btn-retake') {
-    startCaptureFlow();
+  // Confirm food DB record
+  if (e.target.id === 'btn-confirm-food') {
+    confirmFoodDB();
     return;
   }
 
-  // Close result page
-  if (e.target.id === 'btn-result-close') {
-    showPage('home');
-    refreshHome();
+  // Confirm manual record
+  if (e.target.id === 'btn-confirm-manual') {
+    confirmManual();
+    return;
+  }
+
+  // Save as template (from manual record)
+  if (e.target.id === 'btn-save-as-template') {
+    saveAsTemplate();
+    return;
+  }
+
+  // Select template
+  if (e.target.classList.contains('template-select-btn')) {
+    confirmTemplate(e.target.dataset.id);
+    return;
+  }
+
+  // Go to foods page from record page
+  if (e.target.id === 'btn-goto-foods') {
+    showPage('foods');
+    loadFoodsPage();
+    return;
+  }
+
+  // Go to templates page from record page
+  if (e.target.id === 'btn-goto-templates') {
+    showPage('templates');
+    loadTemplatesPage();
+    return;
+  }
+
+  // Food management
+  if (e.target.id === 'btn-manage-foods') {
+    showPage('foods');
+    loadFoodsPage();
+    return;
+  }
+
+  if (e.target.id === 'btn-manage-templates') {
+    showPage('templates');
+    loadTemplatesPage();
+    return;
+  }
+
+  // Add food
+  if (e.target.id === 'btn-add-food') {
+    renderFoodForm(null);
+    bindFoodFormEvents(null);
+    return;
+  }
+
+  // Edit food
+  if (e.target.classList.contains('edit-food-btn')) {
+    loadFoodsPage().then((foods) => {
+      const food = foods.find((f) => f.id === e.target.dataset.id);
+      if (food) {
+        renderFoodForm(food);
+        bindFoodFormEvents(food);
+      }
+    });
+    return;
+  }
+
+  // Delete food
+  if (e.target.classList.contains('delete-food-btn')) {
+    const id = e.target.dataset.id;
+    deleteFood(id).then(() => {
+      showToast('已删除');
+      loadFoodsPage();
+    });
+    return;
+  }
+
+  // Add template
+  if (e.target.id === 'btn-add-template') {
+    renderTemplateForm();
+    bindTemplateFormEvents();
+    return;
+  }
+
+  // Delete template
+  if (e.target.classList.contains('delete-template-btn')) {
+    const id = e.target.dataset.id;
+    deleteTemplate(id).then(() => {
+      showToast('已删除');
+      loadTemplatesPage();
+    });
     return;
   }
 }
 
-function bindResultEvents() {
-  const confirmBtn = document.getElementById('btn-confirm');
-  if (confirmBtn) {
-    confirmBtn.addEventListener('click', confirmSave);
-  }
+// ── Food management ──
+
+async function loadFoodsPage() {
+  const foods = await getAllFoods();
+  renderFoodsPage(foods);
+  return foods;
 }
+
+function bindFoodFormEvents(food) {
+  document.getElementById('btn-save-food').addEventListener('click', () => saveFoodForm(food));
+  document.getElementById('btn-cancel-food-form').addEventListener('click', () => loadFoodsPage());
+}
+
+async function saveFoodForm(existingFood) {
+  const name = document.getElementById('food-form-name').value.trim();
+  const caloriesPer100g = parseFloat(document.getElementById('food-form-cal').value) || 0;
+  const proteinPer100g = parseFloat(document.getElementById('food-form-protein').value) || 0;
+  const fatPer100g = parseFloat(document.getElementById('food-form-fat').value) || 0;
+  const carbsPer100g = parseFloat(document.getElementById('food-form-carbs').value) || 0;
+
+  if (!name) { showToast('请输入食物名称'); return; }
+  if (caloriesPer100g <= 0) { showToast('请输入有效热量'); return; }
+
+  const food = {
+    id: existingFood ? existingFood.id : generateId(),
+    name,
+    caloriesPer100g,
+    proteinPer100g,
+    fatPer100g,
+    carbsPer100g,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (existingFood) {
+    await updateFood(food);
+  } else {
+    await addFood(food);
+  }
+  showToast(existingFood ? '已更新' : '已添加');
+  loadFoodsPage();
+}
+
+// ── Template management ──
+
+async function loadTemplatesPage() {
+  const templates = await getAllTemplates();
+  renderTemplatesPage(templates);
+}
+
+function bindTemplateFormEvents() {
+  document.getElementById('btn-save-template').addEventListener('click', saveTemplateForm);
+  document.getElementById('btn-cancel-template-form').addEventListener('click', () => loadTemplatesPage());
+}
+
+async function saveTemplateForm() {
+  const name = document.getElementById('template-form-name').value.trim();
+  const calories = parseFloat(document.getElementById('template-form-cal').value) || 0;
+  const protein = parseFloat(document.getElementById('template-form-protein').value) || 0;
+  const fat = parseFloat(document.getElementById('template-form-fat').value) || 0;
+  const carbs = parseFloat(document.getElementById('template-form-carbs').value) || 0;
+
+  if (!name) { showToast('请输入模板名称'); return; }
+  if (calories <= 0) { showToast('请输入有效热量'); return; }
+
+  await addTemplate({
+    id: generateId(),
+    name,
+    calories,
+    protein,
+    fat,
+    carbs
+  });
+  showToast('模板已添加');
+  loadTemplatesPage();
+}
+
+// ── Settings ──
 
 function bindSettingsEvents() {
   document.getElementById('btn-save-settings').addEventListener('click', () => {
-    const apiKey = document.getElementById('input-apikey').value.trim();
-    const modelName = document.getElementById('input-model').value.trim() || 'doubao-seed-2-0-mini-260215';
     const dailyCalorieTarget = parseInt(document.getElementById('input-target').value) || 2000;
-
-    saveSettings({ apiKey, modelName, dailyCalorieTarget });
+    saveSettings({ dailyCalorieTarget });
     showToast('设置已保存');
     showPage('home');
     refreshHome();
@@ -225,18 +443,28 @@ function bindSettingsEvents() {
 
 async function exportData() {
   const db = await openDB();
-  const tx = db.transaction('records', 'readonly');
-  const req = tx.objectStore('records').getAll();
-  req.onsuccess = () => {
-    const blob = new Blob([JSON.stringify(req.result, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `calorie-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('数据已导出');
-  };
+  const stores = ['records', 'foods', 'mealTemplates'];
+  const data = {};
+
+  for (const name of stores) {
+    if (db.objectStoreNames.contains(name)) {
+      const tx = db.transaction(name, 'readonly');
+      const req = tx.objectStore(name).getAll();
+      data[name] = await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve(req.result);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+  }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `calorie-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('数据已导出');
 }
 
 async function importData(e) {
@@ -245,24 +473,58 @@ async function importData(e) {
 
   try {
     const text = await file.text();
-    const records = JSON.parse(text);
-    if (!Array.isArray(records)) throw new Error('Invalid format');
+    const data = JSON.parse(text);
 
-    const db = await openDB();
-    const tx = db.transaction('records', 'readwrite');
-    const store = tx.objectStore('records');
-    for (const r of records) {
-      store.put(r);
+    // Support both old format (array) and new format (object with stores)
+    if (Array.isArray(data)) {
+      // Old format: just records array
+      const db = await openDB();
+      const tx = db.transaction('records', 'readwrite');
+      const store = tx.objectStore('records');
+      for (const r of data) store.put(r);
+      await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = reject; });
+      showToast(`已导入 ${data.length} 条记录`);
+    } else {
+      // New format: { records: [...], foods: [...], mealTemplates: [...] }
+      const db = await openDB();
+      let count = 0;
+      for (const [storeName, items] of Object.entries(data)) {
+        if (!Array.isArray(items)) continue;
+        if (!db.objectStoreNames.contains(storeName)) continue;
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        for (const item of items) store.put(item);
+        await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = reject; });
+        count += items.length;
+      }
+      showToast(`已导入 ${count} 条数据`);
     }
-    await new Promise((resolve, reject) => {
-      tx.oncomplete = resolve;
-      tx.onerror = reject;
-    });
-    showToast(`已导入 ${records.length} 条记录`);
     refreshHome();
   } catch (err) {
     showToast('导入失败: 文件格式不正确');
   }
+}
+
+// ── Weekly view ──
+
+function bindWeeklyEvents() {
+  document.getElementById('btn-week-prev').addEventListener('click', () => {
+    const offset = parseInt(document.getElementById('weekly-content').dataset.weekOffset || 0) - 1;
+    renderWeekly(offset);
+    bindWeeklyEvents();
+  });
+
+  document.getElementById('btn-week-next').addEventListener('click', () => {
+    const offset = parseInt(document.getElementById('weekly-content').dataset.weekOffset || 0) + 1;
+    renderWeekly(offset);
+    bindWeeklyEvents();
+  });
+}
+
+// ── Helpers ──
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 async function refreshHome() {
@@ -276,5 +538,6 @@ function registerSW() {
   }
 }
 
-// Start
+// ── Start ──
+
 document.addEventListener('DOMContentLoaded', init);

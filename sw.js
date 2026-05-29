@@ -1,12 +1,10 @@
-const CACHE_NAME = 'calorie-tracker-v3';
+const CACHE_NAME = 'calorie-tracker-v4';
 const ASSETS = [
   './',
   './index.html',
   './css/app.css',
   './js/app.js',
   './js/db.js',
-  './js/camera.js',
-  './js/ai.js',
   './js/ui.js',
   './manifest.json',
   './icons/icon-192.png',
@@ -32,13 +30,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
-  // Don't intercept AI API calls — let them go to network
-  if (e.request.url.includes('volces.com')) return;
-
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) {
-        // Stale-while-revalidate: return cache, update in background
         fetch(e.request).then((response) => {
           if (response.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(e.request, response));
@@ -47,7 +41,6 @@ self.addEventListener('fetch', (e) => {
         return cached;
       }
 
-      // Not cached — try network
       return fetch(e.request).then((response) => {
         if (response.status === 200) {
           const clone = response.clone();
@@ -55,7 +48,6 @@ self.addEventListener('fetch', (e) => {
         }
         return response;
       }).catch(() => {
-        // Offline navigation: fall back to cached index.html (SPA shell)
         if (e.request.mode === 'navigate') {
           return caches.match('./index.html');
         }

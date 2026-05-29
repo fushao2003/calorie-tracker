@@ -1,15 +1,25 @@
 const DB_NAME = 'CalorieTracker';
-const DB_VERSION = 1;
-const STORE_NAME = 'records';
+const DB_VERSION = 2;
+const STORE_RECORDS = 'records';
+const STORE_FOODS = 'foods';
+const STORE_TEMPLATES = 'mealTemplates';
 
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      if (e.oldVersion < 1) {
+        const store = db.createObjectStore(STORE_RECORDS, { keyPath: 'id' });
         store.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      if (e.oldVersion < 2) {
+        if (!db.objectStoreNames.contains(STORE_FOODS)) {
+          db.createObjectStore(STORE_FOODS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_TEMPLATES)) {
+          db.createObjectStore(STORE_TEMPLATES, { keyPath: 'id' });
+        }
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -17,21 +27,23 @@ function openDB() {
   });
 }
 
-function withStore(mode, callback) {
+function withStore(storeName, mode, callback) {
   return openDB().then((db) => {
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, mode);
-      const store = tx.objectStore(STORE_NAME);
-      const req = callback(store);
-      tx.oncomplete = () => resolve(req.result);
+      const tx = db.transaction(storeName, mode);
+      const store = tx.objectStore(storeName);
+      const result = callback(store);
+      tx.oncomplete = () => resolve(result.result !== undefined ? result.result : result);
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
   });
 }
 
+// ── Records ──
+
 function addRecord(record) {
-  return withStore('readwrite', (store) => store.add(record));
+  return withStore(STORE_RECORDS, 'readwrite', (store) => store.add(record));
 }
 
 function getTodayRecords() {
@@ -39,7 +51,7 @@ function getTodayRecords() {
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const end = new Date(start.getTime() + 86400000);
 
-  return withStore('readonly', (store) => {
+  return withStore(STORE_RECORDS, 'readonly', (store) => {
     const index = store.index('timestamp');
     const range = IDBKeyRange.bound(start.toISOString(), end.toISOString());
     return index.getAll(range);
@@ -53,7 +65,7 @@ function getRecordsByDate(dateStr) {
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const end = new Date(start.getTime() + 86400000);
 
-  return withStore('readonly', (store) => {
+  return withStore(STORE_RECORDS, 'readonly', (store) => {
     const index = store.index('timestamp');
     const range = IDBKeyRange.bound(start.toISOString(), end.toISOString());
     return index.getAll(range);
@@ -63,7 +75,7 @@ function getRecordsByDate(dateStr) {
 }
 
 function getAllDates() {
-  return withStore('readonly', (store) => store.getAll()).then((records) => {
+  return withStore(STORE_RECORDS, 'readonly', (store) => store.getAll()).then((records) => {
     const dates = new Set();
     records.forEach((r) => {
       dates.add(r.timestamp.slice(0, 10));
@@ -73,9 +85,41 @@ function getAllDates() {
 }
 
 function deleteRecord(id) {
-  return withStore('readwrite', (store) => store.delete(id));
+  return withStore(STORE_RECORDS, 'readwrite', (store) => store.delete(id));
 }
 
 function getTotalCalories(records) {
   return records.reduce((sum, r) => sum + r.calories, 0);
+}
+
+// ── Foods ──
+
+function getAllFoods() {
+  return withStore(STORE_FOODS, 'readonly', (store) => store.getAll());
+}
+
+function addFood(food) {
+  return withStore(STORE_FOODS, 'readwrite', (store) => store.add(food));
+}
+
+function updateFood(food) {
+  return withStore(STORE_FOODS, 'readwrite', (store) => store.put(food));
+}
+
+function deleteFood(id) {
+  return withStore(STORE_FOODS, 'readwrite', (store) => store.delete(id));
+}
+
+// ── Meal Templates ──
+
+function getAllTemplates() {
+  return withStore(STORE_TEMPLATES, 'readonly', (store) => store.getAll());
+}
+
+function addTemplate(template) {
+  return withStore(STORE_TEMPLATES, 'readwrite', (store) => store.add(template));
+}
+
+function deleteTemplate(id) {
+  return withStore(STORE_TEMPLATES, 'readwrite', (store) => store.delete(id));
 }
