@@ -139,6 +139,12 @@ html, body {
   text-align: center;
 }
 
+.ring-intake-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
 .ring-text .calories {
   font-size: 36px;
   font-weight: 700;
@@ -803,4 +809,73 @@ html, body {
 
 .delete-btn:active {
   color: var(--danger);
+}
+
+/* Confirm dialog */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-dialog {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px 20px 16px;
+  margin: 0 32px;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  text-align: center;
+  animation: scaleIn 0.2s ease;
+}
+
+.confirm-dialog .confirm-msg {
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-dialog .confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-dialog .confirm-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.confirm-dialog .confirm-btn:active {
+  opacity: 0.8;
+}
+
+.confirm-btn-cancel {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.confirm-btn-delete {
+  background: var(--danger);
+  color: white;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

@@ -151,7 +151,7 @@ async function confirmFoodDB() {
   };
 
   await addRecord(record);
-  showToast(`已记录: ${name} ${record.calories} kcal`);
+  showToast(`已记录: ${name} ${record.calories.toFixed(1)} kcal`);
   showPage('home');
   refreshHome();
 }
@@ -175,7 +175,7 @@ async function confirmTemplate(templateId) {
   };
 
   await addRecord(record);
-  showToast(`已记录: ${tpl.name} ${tpl.calories} kcal`);
+  showToast(`已记录: ${tpl.name} ${tpl.calories.toFixed(1)} kcal`);
   showPage('home');
   refreshHome();
 }
@@ -205,7 +205,7 @@ async function confirmManual() {
   };
 
   await addRecord(record);
-  showToast(`已记录: ${foodName} ${calories} kcal`);
+  showToast(`已记录: ${foodName} ${calories.toFixed(1)} kcal`);
   showPage('home');
   refreshHome();
 }
@@ -242,10 +242,15 @@ function handleGlobalClick(e) {
   const deleteBtn = e.target.closest('[data-delete]');
   if (deleteBtn) {
     const id = deleteBtn.dataset.delete;
-    deleteRecord(id).then(() => {
-      showToast('已删除');
-      refreshHome();
-    });
+    const foodName = deleteBtn.closest('.food-entry').querySelector('.name').textContent;
+    showConfirmDialog(`确定要删除「${foodName}」吗？`)
+      .then((confirmed) => {
+        if (!confirmed) return;
+        deleteRecord(id).then(() => {
+          showToast('已删除');
+          refreshHome();
+        });
+      });
     return;
   }
 
@@ -322,10 +327,15 @@ function handleGlobalClick(e) {
   // Delete food
   if (e.target.classList.contains('delete-food-btn')) {
     const id = e.target.dataset.id;
-    deleteFood(id).then(() => {
-      showToast('已删除');
-      loadFoodsPage();
-    });
+    const foodName = e.target.closest('.food-db-item').querySelector('.food-db-name').textContent;
+    showConfirmDialog(`确定要删除食物「${foodName}」吗？`)
+      .then((confirmed) => {
+        if (!confirmed) return;
+        deleteFood(id).then(() => {
+          showToast('已删除');
+          loadFoodsPage();
+        });
+      });
     return;
   }
 
@@ -339,10 +349,15 @@ function handleGlobalClick(e) {
   // Delete template
   if (e.target.classList.contains('delete-template-btn')) {
     const id = e.target.dataset.id;
-    deleteTemplate(id).then(() => {
-      showToast('已删除');
-      loadTemplatesPage();
-    });
+    const tplName = e.target.closest('.food-db-item').querySelector('.food-db-name').textContent;
+    showConfirmDialog(`确定要删除模板「${tplName}」吗？`)
+      .then((confirmed) => {
+        if (!confirmed) return;
+        deleteTemplate(id).then(() => {
+          showToast('已删除');
+          loadTemplatesPage();
+        });
+      });
     return;
   }
 }

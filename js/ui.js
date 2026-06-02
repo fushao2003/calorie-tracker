@@ -49,9 +49,10 @@ function renderCalorieRing(consumed, target) {
           stroke-dashoffset="${offset}"/>
       </svg>
       <div class="ring-text">
+        <div class="ring-intake-label">今日摄入</div>
         <div class="calories">${consumed.toFixed(1)}</div>
-        <div class="label">/ ${target} kcal</div>
-        <div class="remaining">${remaining > 0 ? '剩余 ' + remaining + ' kcal' : '已超出 ' + Math.abs(remaining) + ' kcal'}</div>
+        <div class="label">/ ${target.toFixed(1)} kcal</div>
+        <div class="remaining">${remaining > 0 ? '剩余 ' + remaining.toFixed(1) + ' kcal' : '已超出 ' + Math.abs(remaining).toFixed(1) + ' kcal'}</div>
       </div>
     </div>
   `;
@@ -100,7 +101,7 @@ function renderFoodList(records) {
     <div class="food-entry" data-id="${r.id}">
       <div class="info">
         <div class="name">${escHtml(r.foodName)}</div>
-        <div class="time">${formatTime(r.timestamp)} ${r.estimatedWeight ? r.estimatedWeight + 'g' : ''}</div>
+        <div class="time">${formatTime(r.timestamp)} ${r.estimatedWeight ? r.estimatedWeight.toFixed(1) + 'g' : ''}</div>
       </div>
       <div class="cal">${r.calories.toFixed(1)}<span> kcal</span></div>
       <button class="delete-btn" data-delete="${r.id}">✕</button>
@@ -133,7 +134,7 @@ async function renderHistory() {
       <div class="history-day">
         <div class="history-date">
           <span>${formatDate(dateStr)}</span>
-          <span class="total">${total} kcal</span>
+          <span class="total">${total.toFixed(1)} kcal</span>
         </div>
         ${records
           .map(
@@ -226,14 +227,14 @@ async function renderWeekly(weekOffset) {
             <div class="week-day-name">周${d.dayName}</div>
           </div>
           <div class="week-col-cal">
-            <div class="week-cal-value ${d.cal > target ? 'week-over' : ''}">${d.cal.toFixed(0)}</div>
+            <div class="week-cal-value ${d.cal > target ? 'week-over' : ''}">${d.cal.toFixed(1)}</div>
             <div class="week-cal-bar">
               <div class="week-cal-fill" style="width:${Math.min(d.cal / target * 100, 100)}%"></div>
             </div>
           </div>
-          <div class="week-col-macro">${d.protein.toFixed(0)}g</div>
-          <div class="week-col-macro">${d.fat.toFixed(0)}g</div>
-          <div class="week-col-macro">${d.carbs.toFixed(0)}g</div>
+          <div class="week-col-macro">${d.protein.toFixed(1)}g</div>
+          <div class="week-col-macro">${d.fat.toFixed(1)}g</div>
+          <div class="week-col-macro">${d.carbs.toFixed(1)}g</div>
         </div>
       `).join('')}
     </div>
@@ -242,23 +243,23 @@ async function renderWeekly(weekOffset) {
       <div class="week-summary-title">本周汇总</div>
       <div class="week-summary-grid">
         <div class="week-summary-item">
-          <div class="week-summary-value">${weekTotalCal.toFixed(0)}</div>
+          <div class="week-summary-value">${weekTotalCal.toFixed(1)}</div>
           <div class="week-summary-label">总热量 kcal</div>
         </div>
         <div class="week-summary-item">
-          <div class="week-summary-value">${(weekTotalCal / 7).toFixed(0)}</div>
+          <div class="week-summary-value">${(weekTotalCal / 7).toFixed(1)}</div>
           <div class="week-summary-label">日均热量 kcal</div>
         </div>
         <div class="week-summary-item">
-          <div class="week-summary-value">${(weekTotalProtein / 7).toFixed(0)}</div>
+          <div class="week-summary-value">${(weekTotalProtein / 7).toFixed(1)}</div>
           <div class="week-summary-label">日均蛋白 g</div>
         </div>
         <div class="week-summary-item">
-          <div class="week-summary-value">${(weekTotalFat / 7).toFixed(0)}</div>
+          <div class="week-summary-value">${(weekTotalFat / 7).toFixed(1)}</div>
           <div class="week-summary-label">日均脂肪 g</div>
         </div>
         <div class="week-summary-item">
-          <div class="week-summary-value">${(weekTotalCarbs / 7).toFixed(0)}</div>
+          <div class="week-summary-value">${(weekTotalCarbs / 7).toFixed(1)}</div>
           <div class="week-summary-label">日均碳水 g</div>
         </div>
       </div>
@@ -295,7 +296,7 @@ function renderRecordFoodDB(foods) {
   }
 
   const options = foods.map((f) =>
-    `<option value="${f.id}">${escHtml(f.name)} (${f.caloriesPer100g}kcal/100g)</option>`
+    `<option value="${f.id}">${escHtml(f.name)} (${f.caloriesPer100g.toFixed(1)}kcal/100g)</option>`
   ).join('');
 
   container.innerHTML = `
@@ -330,10 +331,10 @@ function renderRecordFoodDB(foods) {
     document.getElementById('food-nutrition-ref').innerHTML = `
       <div class="nutrition-ref-title">每 100g 营养参考</div>
       <div class="nutrition-ref-grid">
-        <span>热量: ${food.caloriesPer100g} kcal</span>
-        <span>蛋白质: ${food.proteinPer100g} g</span>
-        <span>脂肪: ${food.fatPer100g} g</span>
-        <span>碳水: ${food.carbsPer100g} g</span>
+        <span>热量: ${food.caloriesPer100g.toFixed(1)} kcal</span>
+        <span>蛋白质: ${food.proteinPer100g.toFixed(1)} g</span>
+        <span>脂肪: ${food.fatPer100g.toFixed(1)} g</span>
+        <span>碳水: ${food.carbsPer100g.toFixed(1)} g</span>
       </div>
     `;
 
@@ -377,7 +378,7 @@ function renderRecordTemplate(templates) {
         <div class="template-item" data-id="${t.id}">
           <div class="template-info">
             <div class="template-name">${escHtml(t.name)}</div>
-            <div class="template-detail">${t.calories}kcal | 蛋白${t.protein}g 脂肪${t.fat}g 碳水${t.carbs}g</div>
+            <div class="template-detail">${t.calories.toFixed(1)}kcal | 蛋白${t.protein.toFixed(1)}g 脂肪${t.fat.toFixed(1)}g 碳水${t.carbs.toFixed(1)}g</div>
           </div>
           <button class="btn btn-sm btn-primary template-select-btn" data-id="${t.id}">选择</button>
         </div>
@@ -448,7 +449,7 @@ function renderFoodsPage(foods) {
           <div class="food-db-info">
             <div class="food-db-name">${escHtml(f.name)}</div>
             <div class="food-db-nutrition">
-              每100g: ${f.caloriesPer100g}kcal | 蛋白${f.proteinPer100g}g | 脂肪${f.fatPer100g}g | 碳水${f.carbsPer100g}g
+              每100g: ${f.caloriesPer100g.toFixed(1)}kcal | 蛋白${f.proteinPer100g.toFixed(1)}g | 脂肪${f.fatPer100g.toFixed(1)}g | 碳水${f.carbsPer100g.toFixed(1)}g
             </div>
           </div>
           <div class="food-db-actions">
@@ -523,7 +524,7 @@ function renderTemplatesPage(templates) {
           <div class="food-db-info">
             <div class="food-db-name">${escHtml(t.name)}</div>
             <div class="food-db-nutrition">
-              ${t.calories}kcal | 蛋白${t.protein}g | 脂肪${t.fat}g | 碳水${t.carbs}g
+              ${t.calories.toFixed(1)}kcal | 蛋白${t.protein.toFixed(1)}g | 脂肪${t.fat.toFixed(1)}g | 碳水${t.carbs.toFixed(1)}g
             </div>
           </div>
           <button class="btn btn-sm btn-danger delete-template-btn" data-id="${t.id}">删除</button>
@@ -612,6 +613,38 @@ function escHtml(str) {
 function formatTime(iso) {
   const d = new Date(iso);
   return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+}
+
+function showConfirmDialog(message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+      <div class="confirm-dialog">
+        <div class="confirm-msg">${message}</div>
+        <div class="confirm-actions">
+          <button class="confirm-btn confirm-btn-cancel" id="confirm-cancel">取消</button>
+          <button class="confirm-btn confirm-btn-delete" id="confirm-ok">删除</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#confirm-cancel').onclick = () => {
+      overlay.remove();
+      resolve(false);
+    };
+    overlay.querySelector('#confirm-ok').onclick = () => {
+      overlay.remove();
+      resolve(true);
+    };
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(false);
+      }
+    });
+  });
 }
 
 function formatDate(dateStr) {
