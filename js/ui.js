@@ -36,6 +36,7 @@ function renderCalorieRing(consumed, target) {
   const pct = Math.min(consumed / target, 1);
   const offset = circumference * (1 - pct);
   const remaining = Math.max(target - consumed, 0);
+  const exceeded = consumed - target;
 
   const color = pct >= 1 ? '#F44336' : '#4CAF50';
 
@@ -52,7 +53,7 @@ function renderCalorieRing(consumed, target) {
         <div class="ring-intake-label">今日摄入</div>
         <div class="calories">${consumed.toFixed(1)}</div>
         <div class="label">/ ${target.toFixed(1)} kcal</div>
-        <div class="remaining">${remaining > 0 ? '剩余 ' + remaining.toFixed(1) + ' kcal' : '已超出 ' + Math.abs(remaining).toFixed(1) + ' kcal'}</div>
+        <div class="remaining${remaining > 0 ? '' : ' exceeded'}">${remaining > 0 ? '剩余 ' + remaining.toFixed(1) + ' kcal' : '已超出 ' + exceeded.toFixed(1) + ' kcal'}</div>
       </div>
     </div>
   `;

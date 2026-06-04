@@ -161,6 +161,9 @@ html, body {
   color: var(--primary);
   margin-top: 2px;
 }
+.ring-text .remaining.exceeded {
+  color: var(--danger);
+}
 
 /* Macro bars */
 .macros {
