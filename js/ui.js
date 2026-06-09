@@ -103,6 +103,11 @@ function renderFoodList(records) {
       <div class="info">
         <div class="name">${escHtml(r.foodName)}</div>
         <div class="time">${formatTime(r.timestamp)} ${r.estimatedWeight ? r.estimatedWeight.toFixed(1) + 'g' : ''}</div>
+        <div class="macros-row">
+          <span class="macro-pill protein">蛋白 ${(r.protein ?? 0).toFixed(1)}g</span>
+          <span class="macro-pill fat">脂肪 ${(r.fat ?? 0).toFixed(1)}g</span>
+          <span class="macro-pill carbs">碳水 ${(r.carbs ?? 0).toFixed(1)}g</span>
+        </div>
       </div>
       <div class="cal">${r.calories.toFixed(1)}<span> kcal</span></div>
       <button class="delete-btn" data-delete="${r.id}">✕</button>
@@ -144,6 +149,11 @@ async function renderHistory() {
             <div class="info">
               <div class="name">${escHtml(r.foodName)}</div>
               <div class="time">${formatTime(r.timestamp)}</div>
+              <div class="macros-row">
+                <span class="macro-pill protein">蛋白 ${(r.protein ?? 0).toFixed(1)}g</span>
+                <span class="macro-pill fat">脂肪 ${(r.fat ?? 0).toFixed(1)}g</span>
+                <span class="macro-pill carbs">碳水 ${(r.carbs ?? 0).toFixed(1)}g</span>
+              </div>
             </div>
             <div class="cal">${r.calories.toFixed(1)}<span> kcal</span></div>
           </div>`
@@ -233,9 +243,9 @@ async function renderWeekly(weekOffset) {
               <div class="week-cal-fill" style="width:${Math.min(d.cal / target * 100, 100)}%"></div>
             </div>
           </div>
-          <div class="week-col-macro">${d.protein.toFixed(1)}g</div>
-          <div class="week-col-macro">${d.fat.toFixed(1)}g</div>
-          <div class="week-col-macro">${d.carbs.toFixed(1)}g</div>
+          <div class="week-col-macro">${(d.protein || 0).toFixed(1)}g</div>
+          <div class="week-col-macro">${(d.fat || 0).toFixed(1)}g</div>
+          <div class="week-col-macro">${(d.carbs || 0).toFixed(1)}g</div>
         </div>
       `).join('')}
     </div>
@@ -333,9 +343,9 @@ function renderRecordFoodDB(foods) {
       <div class="nutrition-ref-title">每 100g 营养参考</div>
       <div class="nutrition-ref-grid">
         <span>热量: ${food.caloriesPer100g.toFixed(1)} kcal</span>
-        <span>蛋白质: ${food.proteinPer100g.toFixed(1)} g</span>
-        <span>脂肪: ${food.fatPer100g.toFixed(1)} g</span>
-        <span>碳水: ${food.carbsPer100g.toFixed(1)} g</span>
+        <span>蛋白质: ${(food.proteinPer100g || 0).toFixed(1)} g</span>
+        <span>脂肪: ${(food.fatPer100g || 0).toFixed(1)} g</span>
+        <span>碳水: ${(food.carbsPer100g || 0).toFixed(1)} g</span>
       </div>
     `;
 
@@ -346,9 +356,9 @@ function renderRecordFoodDB(foods) {
       <div class="calc-result-title">计算结果（${weight}g）</div>
       <div class="calc-result-grid">
         <div class="calc-item"><span class="calc-val">${(food.caloriesPer100g * ratio).toFixed(1)}</span> kcal</div>
-        <div class="calc-item"><span class="calc-val">${(food.proteinPer100g * ratio).toFixed(1)}</span> g 蛋白质</div>
-        <div class="calc-item"><span class="calc-val">${(food.fatPer100g * ratio).toFixed(1)}</span> g 脂肪</div>
-        <div class="calc-item"><span class="calc-val">${(food.carbsPer100g * ratio).toFixed(1)}</span> g 碳水</div>
+        <div class="calc-item"><span class="calc-val">${((food.proteinPer100g || 0) * ratio).toFixed(1)}</span> g 蛋白质</div>
+        <div class="calc-item"><span class="calc-val">${((food.fatPer100g || 0) * ratio).toFixed(1)}</span> g 脂肪</div>
+        <div class="calc-item"><span class="calc-val">${((food.carbsPer100g || 0) * ratio).toFixed(1)}</span> g 碳水</div>
       </div>
     `;
   }
@@ -379,7 +389,7 @@ function renderRecordTemplate(templates) {
         <div class="template-item" data-id="${t.id}">
           <div class="template-info">
             <div class="template-name">${escHtml(t.name)}</div>
-            <div class="template-detail">${t.calories.toFixed(1)}kcal | 蛋白${t.protein.toFixed(1)}g 脂肪${t.fat.toFixed(1)}g 碳水${t.carbs.toFixed(1)}g</div>
+            <div class="template-detail">${t.calories.toFixed(1)}kcal | 蛋白${(t.protein || 0).toFixed(1)}g 脂肪${(t.fat || 0).toFixed(1)}g 碳水${(t.carbs || 0).toFixed(1)}g</div>
           </div>
           <button class="btn btn-sm btn-primary template-select-btn" data-id="${t.id}">选择</button>
         </div>
@@ -450,7 +460,7 @@ function renderFoodsPage(foods) {
           <div class="food-db-info">
             <div class="food-db-name">${escHtml(f.name)}</div>
             <div class="food-db-nutrition">
-              每100g: ${f.caloriesPer100g.toFixed(1)}kcal | 蛋白${f.proteinPer100g.toFixed(1)}g | 脂肪${f.fatPer100g.toFixed(1)}g | 碳水${f.carbsPer100g.toFixed(1)}g
+              每100g: ${f.caloriesPer100g.toFixed(1)}kcal | 蛋白${(f.proteinPer100g || 0).toFixed(1)}g | 脂肪${(f.fatPer100g || 0).toFixed(1)}g | 碳水${(f.carbsPer100g || 0).toFixed(1)}g
             </div>
           </div>
           <div class="food-db-actions">
@@ -525,7 +535,7 @@ function renderTemplatesPage(templates) {
           <div class="food-db-info">
             <div class="food-db-name">${escHtml(t.name)}</div>
             <div class="food-db-nutrition">
-              ${t.calories.toFixed(1)}kcal | 蛋白${t.protein.toFixed(1)}g | 脂肪${t.fat.toFixed(1)}g | 碳水${t.carbs.toFixed(1)}g
+              ${t.calories.toFixed(1)}kcal | 蛋白${(t.protein || 0).toFixed(1)}g | 脂肪${(t.fat || 0).toFixed(1)}g | 碳水${(t.carbs || 0).toFixed(1)}g
             </div>
           </div>
           <button class="btn btn-sm btn-danger delete-template-btn" data-id="${t.id}">删除</button>

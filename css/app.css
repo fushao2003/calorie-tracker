@@ -235,6 +235,37 @@ html, body {
   color: var(--text-secondary);
 }
 
+.food-entry .macros-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.food-entry .macro-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.food-entry .macro-pill.protein {
+  background: #FCE4EC;
+  color: #C62828;
+}
+
+.food-entry .macro-pill.fat {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.food-entry .macro-pill.carbs {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
 .food-entry .cal {
   font-size: 18px;
   font-weight: 700;

@@ -144,9 +144,9 @@ async function confirmFoodDB() {
     foodName: name,
     estimatedWeight: weight,
     calories: parseFloat((food.caloriesPer100g * ratio).toFixed(1)),
-    protein: parseFloat((food.proteinPer100g * ratio).toFixed(1)),
-    fat: parseFloat((food.fatPer100g * ratio).toFixed(1)),
-    carbs: parseFloat((food.carbsPer100g * ratio).toFixed(1)),
+    protein: parseFloat(((food.proteinPer100g || 0) * ratio).toFixed(1)),
+    fat: parseFloat(((food.fatPer100g || 0) * ratio).toFixed(1)),
+    carbs: parseFloat(((food.carbsPer100g || 0) * ratio).toFixed(1)),
     timestamp: new Date().toISOString()
   };
 
@@ -168,9 +168,9 @@ async function confirmTemplate(templateId) {
     foodName: tpl.name,
     estimatedWeight: 0,
     calories: tpl.calories,
-    protein: tpl.protein,
-    fat: tpl.fat,
-    carbs: tpl.carbs,
+    protein: tpl.protein || 0,
+    fat: tpl.fat || 0,
+    carbs: tpl.carbs || 0,
     timestamp: new Date().toISOString()
   };
 
